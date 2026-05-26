@@ -1,0 +1,153 @@
+{% extends 'circle/base.html' %}
+{% load static %}
+
+{% block title %}Forecast Volume - Raw Smith Circle{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+  <div class="mb-8">
+    <h1 class="font-display text-3xl sm:text-4xl text-espresso">Daily Volume Forecast</h1>
+    <p class="text-muted mt-1 max-w-2xl">
+      Given a day's weather and the prevailing Arabica coffee price, the Random&nbsp;Forest
+      regressor predicts the loyalty points issued, expected transactions and a reward
+      inventory recommendation.
+    </p>
+  </div>
+
+  {% if not model_ready %}
+    <div class="rounded-xl border border-warning/40 bg-warning/10 px-5 py-4 text-roast mb-8">
+      <p class="font-semibold">The volume model has not been trained yet.</p>
+      <p class="text-sm text-muted mt-1">
+        Run <code class="font-mono">python circle/ml/train_volume_model.py</code> after placing the
+        Phase&nbsp;2 enrichment files in <code class="font-mono">data/</code>.
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="grid gap-6 lg:grid-cols-5">
+    {# Form #}
+    <div class="lg:col-span-3 bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+      <form method="post" id="volume-form" class="js-predict-form" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="rounded-lg bg-red-50 border border-red-200 px-4 py-2 mb-4 text-sm text-red-700">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+        <div class="grid sm:grid-cols-2 gap-4">
+          {% for field in form %}
+            <div>
+              <label class="block text-sm font-medium text-roast mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<p class="text-xs text-muted mt-1">{{ field.help_text }}</p>{% endif %}
+              {% for error in field.errors %}<p class="text-xs text-red-600 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+        <button type="submit" id="volume-submit"
+                class="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-caramel text-white font-semibold hover:bg-caramel/90 transition disabled:opacity-60">
+          <span class="js-spinner hidden h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+          Forecast Volume
+        </button>
+      </form>
+    </div>
+
+    {# Result / info #}
+    <div class="lg:col-span-2">
+      {% if result %}
+        <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+          <p class="text-xs uppercase tracking-wide text-muted mb-1">Predicted points issued</p>
+          <p class="font-display text-4xl text-espresso mb-4">{{ result.predicted_points|floatformat:0 }}</p>
+
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="rounded-lg bg-cream py-3 text-center">
+              <p class="font-display text-2xl text-espresso">{{ result.predicted_transactions }}</p>
+              <p class="text-xs text-muted">Expected transactions</p>
+            </div>
+            <div class="rounded-lg bg-cream py-3 text-center">
+              <p class="font-display text-2xl text-espresso">{{ result.recommended_inventory }}</p>
+              <p class="text-xs text-muted">Reward inventory</p>
+            </div>
+          </div>
+
+          {% if monthly_average %}
+            <div class="rounded-lg bg-cream border border-muted/15 px-4 py-3">
+              <p class="text-xs uppercase tracking-wide text-muted mb-1">vs. historical average for this month</p>
+              <p class="text-sm text-roast">
+                Month average: <span class="font-semibold">{{ monthly_average|floatformat:0 }}</span> pts/day &mdash;
+                this forecast is
+                {% if result.predicted_points >= monthly_average %}
+                  <span class="font-semibold text-success">above</span>
+                {% else %}
+                  <span class="font-semibold text-warning">below</span>
+                {% endif %}
+                the seasonal norm.
+              </p>
+            </div>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm text-sm text-muted">
+          <p>Submit the form to forecast the day's loyalty volume, expected transactions
+          and a recommended reward inventory level.</p>
+        </div>
+      {% endif %}
+
+      {% if metrics %}
+        <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm mt-4">
+          <p class="text-xs uppercase tracking-wide text-muted mb-3">Model performance (held-out test set)</p>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="rounded-lg bg-cream py-3">
+              <p class="font-display text-xl text-espresso">{{ metrics.r2|floatformat:3 }}</p>
+              <p class="text-xs text-muted">R&sup2;</p>
+            </div>
+            <div class="rounded-lg bg-cream py-3">
+              <p class="font-display text-xl text-espresso">{{ metrics.rmse|floatformat:1 }}</p>
+              <p class="text-xs text-muted">RMSE</p>
+            </div>
+            <div class="rounded-lg bg-cream py-3">
+              <p class="font-display text-xl text-espresso">{{ metrics.mae|floatformat:1 }}</p>
+              <p class="text-xs text-muted">MAE</p>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# History #}
+  {% if history %}
+    <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm mt-6">
+      <h2 class="font-display text-lg text-espresso mb-3">Recent forecasts</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-muted border-b border-muted/20">
+              <th class="py-2 pr-4 font-medium">Date</th>
+              <th class="py-2 pr-4 font-medium text-right">Points</th>
+              <th class="py-2 pr-4 font-medium text-right">Txns</th>
+              <th class="py-2 pr-4 font-medium text-right">Inventory</th>
+              <th class="py-2 font-medium text-right">Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in history %}
+            <tr class="border-b border-muted/10">
+              <td class="py-2 pr-4 font-medium text-roast">{{ f.forecast_date|date:"d M Y" }}</td>
+              <td class="py-2 pr-4 text-right tabular-nums">{{ f.predicted_points|floatformat:0 }}</td>
+              <td class="py-2 pr-4 text-right tabular-nums">{{ f.predicted_transactions }}</td>
+              <td class="py-2 pr-4 text-right tabular-nums">{{ f.recommended_reward_inventory }}</td>
+              <td class="py-2 text-right text-muted">{{ f.created_at|date:"d M, H:i" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'circle/js/predict.js' %}"></script>
+{% endblock %}

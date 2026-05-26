@@ -1,0 +1,68 @@
+{% extends 'circle/base.html' %}
+{% load static %}
+
+{% block title %}About - Raw Smith Circle{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+  <h1 class="font-display text-3xl sm:text-4xl text-espresso mb-2">About this project</h1>
+  <p class="text-muted mb-10 max-w-2xl">
+    Raw Smith Circle is the production loyalty platform of Raw Smith Specialty Coffee in
+    Amman. This application is Phase&nbsp;3 of a three-phase course project for
+    <span class="text-roast font-medium">606315 Programming for Data Science</span>.
+  </p>
+
+  <div class="space-y-6">
+    <article class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+      <h2 class="font-display text-xl text-espresso mb-2">Phase 1 &middot; Foundations</h2>
+      <p class="text-sm text-muted leading-relaxed">
+        NumPy operations and a Pandas exploratory data analysis across five anonymized
+        tables (transactions, customers, rewards, redemptions, menu), surfacing the core
+        loyalty metrics and customer behaviour patterns.
+      </p>
+    </article>
+    <article class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+      <h2 class="font-display text-xl text-espresso mb-2">Phase 2 &middot; Enrichment</h2>
+      <p class="text-sm text-muted leading-relaxed">
+        A multithreaded CSV loader, the Open-Meteo weather API (261 days of Amman weather
+        merged by date), and ICO Arabica coffee prices (nine months merged by month),
+        producing a single enriched dataset of 1,000 transactions across 19 columns.
+      </p>
+    </article>
+    <article class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+      <h2 class="font-display text-xl text-espresso mb-2">Phase 3 &middot; Product (this app)</h2>
+      <p class="text-sm text-muted leading-relaxed">
+        A Django web application with template inheritance and clean URL routing, a Chart.js
+        analytics dashboard powered by the Django ORM, two scikit-learn models (a tier
+        classifier and a daily-volume regressor) served from serialized joblib pipelines, a
+        Django REST Framework API, and a cloud deployment on Render.
+      </p>
+    </article>
+  </div>
+
+  <h2 class="font-display text-2xl text-espresso mt-12 mb-4">Technology stack</h2>
+  <div class="bg-white rounded-2xl border border-muted/15 overflow-hidden shadow-sm">
+    <table class="w-full text-sm">
+      <tbody>
+        {% for layer, choice in stack %}
+        <tr class="border-b border-muted/10 last:border-0">
+          <td class="py-3 px-5 font-medium text-roast w-1/3">{{ layer }}</td>
+          <td class="py-3 px-5 text-muted">{{ choice }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="font-display text-2xl text-espresso mt-12 mb-4">Author</h2>
+  <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+    <p class="text-roast font-medium">Abdelrahman Elkurdi</p>
+    <p class="text-sm text-muted">Student ID 202410905 &middot; Data Science &amp; AI, University of Petra</p>
+    <p class="text-sm text-muted mt-1">Instructor: Dr. Mohammad Arafah (solo project)</p>
+    <a href="https://github.com/kurdim12/uop-project" target="_blank" rel="noopener"
+       class="inline-block mt-4 px-4 py-2 rounded-lg bg-espresso text-white text-sm font-semibold hover:bg-roast transition">
+      View on GitHub
+    </a>
+  </div>
+</section>
+{% endblock %}

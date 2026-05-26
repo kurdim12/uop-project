@@ -1,0 +1,173 @@
+{% extends 'circle/base.html' %}
+{% load static %}
+
+{% block title %}Predict Tier - Raw Smith Circle{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+  <div class="mb-8">
+    <h1 class="font-display text-3xl sm:text-4xl text-espresso">Tier Upgrade Predictor</h1>
+    <p class="text-muted mt-1 max-w-2xl">
+      Enter a customer's behaviour and the Random&nbsp;Forest classifier predicts their
+      loyalty tier, with probabilities and a targeted marketing recommendation.
+    </p>
+  </div>
+
+  {% if not model_ready %}
+    <div class="rounded-xl border border-warning/40 bg-warning/10 px-5 py-4 text-roast mb-8">
+      <p class="font-semibold">The tier model has not been trained yet.</p>
+      <p class="text-sm text-muted mt-1">
+        Run <code class="font-mono">python circle/ml/train_tier_model.py</code> after placing the
+        data in <code class="font-mono">data/</code>. The form still validates, but predictions are disabled.
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="grid gap-6 lg:grid-cols-5">
+    {# Form #}
+    <div class="lg:col-span-3 bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+      <div class="flex flex-wrap gap-2 mb-5">
+        <span class="text-xs uppercase tracking-wide text-muted self-center mr-1">Presets:</span>
+        <button type="button" class="preset px-3 py-1.5 rounded-md text-xs font-semibold bg-caramel/10 text-caramel hover:bg-caramel/20 transition"
+          data-total_points_earned="120" data-transaction_count="10" data-drink_purchase_ratio="0.2" data-days_since_signup="45" data-avg_points_per_transaction="12">Typical Bronze</button>
+        <button type="button" class="preset px-3 py-1.5 rounded-md text-xs font-semibold bg-caramel/10 text-caramel hover:bg-caramel/20 transition"
+          data-total_points_earned="600" data-transaction_count="45" data-drink_purchase_ratio="0.5" data-days_since_signup="150" data-avg_points_per_transaction="13">Silver candidate</button>
+        <button type="button" class="preset px-3 py-1.5 rounded-md text-xs font-semibold bg-caramel/10 text-caramel hover:bg-caramel/20 transition"
+          data-total_points_earned="2200" data-transaction_count="120" data-drink_purchase_ratio="0.7" data-days_since_signup="400" data-avg_points_per_transaction="18">Gold candidate</button>
+      </div>
+
+      <form method="post" id="tier-form" class="js-predict-form" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="rounded-lg bg-red-50 border border-red-200 px-4 py-2 mb-4 text-sm text-red-700">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+        <div class="grid sm:grid-cols-2 gap-4">
+          {% for field in form %}
+            <div>
+              <label class="block text-sm font-medium text-roast mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<p class="text-xs text-muted mt-1">{{ field.help_text }}</p>{% endif %}
+              {% for error in field.errors %}<p class="text-xs text-red-600 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+        <button type="submit" id="tier-submit"
+                class="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-caramel text-white font-semibold hover:bg-caramel/90 transition disabled:opacity-60">
+          <span class="js-spinner hidden h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+          Predict Tier
+        </button>
+      </form>
+    </div>
+
+    {# Result / info #}
+    <div class="lg:col-span-2">
+      {% if result %}
+        <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+          <p class="text-xs uppercase tracking-wide text-muted mb-2">Predicted Tier</p>
+          <div class="inline-flex items-center px-4 py-2 rounded-xl text-2xl font-display font-semibold mb-4
+            {% if result.predicted_tier == 'gold' %}bg-warning/20 text-warning
+            {% elif result.predicted_tier == 'silver' %}bg-muted/20 text-roast
+            {% else %}bg-caramel/15 text-caramel{% endif %}">
+            {{ result.predicted_tier|capfirst }}
+          </div>
+
+          <p class="text-sm text-muted mb-3">Confidence: <span class="font-semibold text-roast">{% widthratio result.confidence 1 100 %}%</span></p>
+
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-roast">Bronze</span>
+                <span class="text-muted">{% widthratio result.probabilities.bronze 1 100 %}%</span>
+              </div>
+              <div class="h-2 rounded-full bg-muted/15 overflow-hidden">
+                <div class="h-full rounded-full bg-caramel" style="width: {% widthratio result.probabilities.bronze 1 100 %}%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-roast">Silver</span>
+                <span class="text-muted">{% widthratio result.probabilities.silver 1 100 %}%</span>
+              </div>
+              <div class="h-2 rounded-full bg-muted/15 overflow-hidden">
+                <div class="h-full rounded-full bg-muted" style="width: {% widthratio result.probabilities.silver 1 100 %}%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-roast">Gold</span>
+                <span class="text-muted">{% widthratio result.probabilities.gold 1 100 %}%</span>
+              </div>
+              <div class="h-2 rounded-full bg-muted/15 overflow-hidden">
+                <div class="h-full rounded-full bg-warning" style="width: {% widthratio result.probabilities.gold 1 100 %}%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-lg bg-cream border border-muted/15 px-4 py-3">
+            <p class="text-xs uppercase tracking-wide text-muted mb-1">Recommendation</p>
+            <p class="text-sm text-roast">{{ result.recommendation }}</p>
+          </div>
+        </div>
+      {% else %}
+        <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm text-sm text-muted">
+          <p>Fill the form (or pick a preset) and submit to see the predicted tier,
+          class probabilities and a marketing recommendation here.</p>
+        </div>
+      {% endif %}
+
+      {% if metrics %}
+        <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm mt-4">
+          <p class="text-xs uppercase tracking-wide text-muted mb-3">Model performance (held-out test set)</p>
+          <div class="grid grid-cols-2 gap-3 text-center">
+            <div class="rounded-lg bg-cream py-3">
+              <p class="font-display text-2xl text-espresso">{{ metrics.accuracy|floatformat:3 }}</p>
+              <p class="text-xs text-muted">Accuracy</p>
+            </div>
+            <div class="rounded-lg bg-cream py-3">
+              <p class="font-display text-2xl text-espresso">{{ metrics.f1_weighted|floatformat:3 }}</p>
+              <p class="text-xs text-muted">F1 (weighted)</p>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# History #}
+  {% if history %}
+    <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm mt-6">
+      <h2 class="font-display text-lg text-espresso mb-3">Recent predictions</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-muted border-b border-muted/20">
+              <th class="py-2 pr-4 font-medium">When</th>
+              <th class="py-2 pr-4 font-medium">Tier</th>
+              <th class="py-2 pr-4 font-medium text-right">Confidence</th>
+              <th class="py-2 pr-4 font-medium text-right">Points</th>
+              <th class="py-2 font-medium text-right">Txns</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in history %}
+            <tr class="border-b border-muted/10">
+              <td class="py-2 pr-4 text-muted">{{ p.created_at|date:"d M, H:i" }}</td>
+              <td class="py-2 pr-4 font-medium text-roast">{{ p.predicted_tier|capfirst }}</td>
+              <td class="py-2 pr-4 text-right tabular-nums">{{ p.confidence|floatformat:2 }}</td>
+              <td class="py-2 pr-4 text-right tabular-nums">{{ p.total_points_earned }}</td>
+              <td class="py-2 text-right tabular-nums">{{ p.transaction_count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'circle/js/predict.js' %}"></script>
+{% endblock %}

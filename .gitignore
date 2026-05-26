@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+*.log
+
+# Environments
+.env
+.venv/
+venv/
+env/
+
+# ML lock files
+*.joblib.lock
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp

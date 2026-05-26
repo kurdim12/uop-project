@@ -1,0 +1,119 @@
+{% extends 'circle/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Raw Smith Circle{% endblock %}
+
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+  <div class="flex flex-wrap items-end justify-between gap-3 mb-8">
+    <div>
+      <h1 class="font-display text-3xl sm:text-4xl text-espresso">Loyalty Dashboard</h1>
+      <p class="text-muted mt-1">Live analytics across the Raw Smith Circle membership.</p>
+    </div>
+    {% if data_as_of %}
+      <p class="text-xs text-muted">Data as of {{ data_as_of|date:"d M Y, H:i" }}</p>
+    {% endif %}
+  </div>
+
+  {% if not has_data %}
+    <div class="rounded-xl border border-warning/40 bg-warning/10 px-5 py-4 text-roast mb-8">
+      <p class="font-semibold">No data loaded yet.</p>
+      <p class="text-sm text-muted mt-1">
+        Place the anonymized CSVs in <code class="font-mono">data/</code> and run
+        <code class="font-mono">python manage.py load_data</code> to populate these charts.
+      </p>
+    </div>
+  {% endif %}
+
+  {# Stat cards #}
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+    <div class="bg-white rounded-2xl border border-muted/15 p-5 shadow-sm print:break-inside-avoid">
+      <p class="text-xs uppercase tracking-wide text-muted">Total Customers</p>
+      <p class="font-display text-3xl text-espresso mt-1">{{ stats.customers }}</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-muted/15 p-5 shadow-sm print:break-inside-avoid">
+      <p class="text-xs uppercase tracking-wide text-muted">Points Issued</p>
+      <p class="font-display text-3xl text-espresso mt-1">{{ stats.points_issued }}</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-muted/15 p-5 shadow-sm print:break-inside-avoid">
+      <p class="text-xs uppercase tracking-wide text-muted">Redemptions</p>
+      <p class="font-display text-3xl text-espresso mt-1">{{ stats.redemptions }}</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-muted/15 p-5 shadow-sm print:break-inside-avoid">
+      <p class="text-xs uppercase tracking-wide text-muted">Drink Purchases</p>
+      <p class="font-display text-3xl text-espresso mt-1">{{ stats.drink_purchases }}</p>
+    </div>
+  </div>
+
+  {# Charts #}
+  <div class="grid gap-6 lg:grid-cols-2">
+    <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm print:break-inside-avoid">
+      <h2 class="font-display text-xl text-espresso mb-4">Tier Distribution</h2>
+      <div class="relative h-72"><canvas id="tierChart"></canvas></div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm print:break-inside-avoid">
+      <h2 class="font-display text-xl text-espresso mb-4">Monthly Point Flow</h2>
+      <div class="relative h-72"><canvas id="monthlyChart"></canvas></div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm print:break-inside-avoid">
+      <h2 class="font-display text-xl text-espresso mb-4">Points by Earn Source</h2>
+      <div class="relative h-72"><canvas id="sourceChart"></canvas></div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm print:break-inside-avoid">
+      <h2 class="font-display text-xl text-espresso mb-4">Daily Transactions (7-day avg)</h2>
+      <div class="relative h-72"><canvas id="dailyChart"></canvas></div>
+    </div>
+  </div>
+
+  {# Top 10 customers #}
+  <div class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm mt-6 print:break-inside-avoid">
+    <h2 class="font-display text-xl text-espresso mb-4">Top 10 Customers by Points Earned</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-muted border-b border-muted/20">
+            <th class="py-2 pr-4 font-medium">#</th>
+            <th class="py-2 pr-4 font-medium">Customer</th>
+            <th class="py-2 pr-4 font-medium">Tier</th>
+            <th class="py-2 pr-4 font-medium text-right">Points Earned</th>
+            <th class="py-2 font-medium text-right">Current Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in top_customers %}
+          <tr class="border-b border-muted/10">
+            <td class="py-2 pr-4 text-muted">{{ forloop.counter }}</td>
+            <td class="py-2 pr-4 font-medium text-roast">{{ c.customer_code }}</td>
+            <td class="py-2 pr-4">
+              <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold
+                {% if c.membership_tier == 'gold' %}bg-warning/20 text-warning
+                {% elif c.membership_tier == 'silver' %}bg-muted/20 text-muted
+                {% else %}bg-caramel/15 text-caramel{% endif %}">
+                {{ c.membership_tier|capfirst }}
+              </span>
+            </td>
+            <td class="py-2 pr-4 text-right tabular-nums">{{ c.total_points_earned }}</td>
+            <td class="py-2 text-right tabular-nums">{{ c.current_points }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="py-6 text-center text-muted">No customers loaded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+{{ chart_data|json_script:"chart-data" }}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'circle/js/dashboard.js' %}"></script>
+{% endblock %}

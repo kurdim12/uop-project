@@ -1,0 +1,63 @@
+{% extends 'circle/base.html' %}
+{% load static %}
+
+{% block title %}Raw Smith Circle - Loyalty Analytics & ML{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 sm:px-6 pt-16 pb-12">
+  <div class="max-w-3xl">
+    <p class="text-caramel font-semibold tracking-wide uppercase text-sm mb-3">Raw Smith Specialty Coffee &middot; Amman</p>
+    <h1 class="font-display text-4xl sm:text-5xl text-espresso leading-tight mb-5">
+      The data science behind every cup of loyalty.
+    </h1>
+    <p class="text-lg text-muted leading-relaxed mb-8">
+      Raw Smith Circle is the production loyalty platform for Raw Smith Specialty Coffee.
+      This Phase&nbsp;3 application turns three phases of anonymized data work into a live,
+      interactive product: an analytics dashboard and two machine-learning models served
+      through Django.
+    </p>
+    <div class="flex flex-wrap gap-3">
+      <a href="{% url 'circle:dashboard' %}" class="px-5 py-3 rounded-lg bg-caramel text-white font-semibold hover:bg-caramel/90 transition shadow-sm">View Dashboard</a>
+      <a href="{% url 'circle:predict_tier' %}" class="px-5 py-3 rounded-lg bg-white border border-muted/30 text-roast font-semibold hover:border-caramel transition">Predict Tier</a>
+      <a href="{% url 'circle:predict_volume' %}" class="px-5 py-3 rounded-lg bg-white border border-muted/30 text-roast font-semibold hover:border-caramel transition">Forecast Volume</a>
+    </div>
+
+    {% if total_customers %}
+    <p class="mt-8 text-sm text-muted">
+      Currently serving <span class="font-semibold text-roast">{{ total_customers }}</span> anonymized members
+      and <span class="font-semibold text-roast">{{ total_points }}</span> points issued.
+    </p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
+  <div class="grid gap-6 md:grid-cols-3">
+    <article class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+      <span class="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-caramel/10 text-caramel font-display text-lg mb-4">1</span>
+      <h2 class="font-display text-xl text-espresso mb-2">Phase 1 &middot; Foundations</h2>
+      <p class="text-sm text-muted leading-relaxed">
+        NumPy operations and a Pandas exploratory analysis across five anonymized tables -
+        transactions, customers, rewards, redemptions and menu - establishing the core
+        loyalty metrics.
+      </p>
+    </article>
+    <article class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+      <span class="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-caramel/10 text-caramel font-display text-lg mb-4">2</span>
+      <h2 class="font-display text-xl text-espresso mb-2">Phase 2 &middot; Enrichment</h2>
+      <p class="text-sm text-muted leading-relaxed">
+        A multithreaded CSV loader, 261 days of Amman weather from the Open-Meteo API, and
+        nine months of ICO Arabica coffee prices - merged into a single enriched dataset.
+      </p>
+    </article>
+    <article class="bg-white rounded-2xl border border-muted/15 p-6 shadow-sm">
+      <span class="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-caramel/10 text-caramel font-display text-lg mb-4">3</span>
+      <h2 class="font-display text-xl text-espresso mb-2">Phase 3 &middot; Product</h2>
+      <p class="text-sm text-muted leading-relaxed">
+        This Django application: a Chart.js dashboard, a tier classifier and a daily-volume
+        regressor, a REST API, and a cloud deployment on Render.
+      </p>
+    </article>
+  </div>
+</section>
+{% endblock %}
