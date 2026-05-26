@@ -58,6 +58,14 @@ class Command(BaseCommand):
             help="Directory containing the CSV files (default: <project>/data).",
         )
 
+    def _find(self, name: str, data_dir: Path) -> Path | None:
+        """Locate a data file in data_dir (preferred) or the repo root."""
+        for base in (data_dir, settings.BASE_DIR):
+            candidate = base / name
+            if candidate.exists():
+                return candidate
+        return None
+
     def handle(self, *args, **options) -> None:
         data_dir = Path(options["data_dir"])
 
@@ -67,15 +75,14 @@ class Command(BaseCommand):
             )
             return
 
-        customers_csv = data_dir / "customers.csv"
-        transactions_csv = data_dir / "transactions.csv"
+        customers_csv = self._find("customers.csv", data_dir)
+        transactions_csv = self._find("transactions.csv", data_dir)
 
-        if not customers_csv.exists() or not transactions_csv.exists():
+        if customers_csv is None or transactions_csv is None:
             self.stdout.write(
                 self.style.WARNING(
-                    f"Data files not found in {data_dir} "
-                    "(need customers.csv and transactions.csv). "
-                    "Nothing loaded."
+                    f"Data files not found in {data_dir} or {settings.BASE_DIR} "
+                    "(need customers.csv and transactions.csv). Nothing loaded."
                 )
             )
             return

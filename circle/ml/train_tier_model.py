@@ -36,9 +36,20 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 ML_DIR = Path(__file__).resolve().parent
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+# Look in data/ first, then the repo root (files are sometimes uploaded there).
+_DATA_DIRS = [REPO_ROOT / "data", REPO_ROOT]
 MODEL_PATH = ML_DIR / "tier_model.joblib"
 METRICS_PATH = ML_DIR / "tier_model_metrics.json"
+
+
+def find_data_file(name: str) -> Path:
+    """Locate a data file in data/ (preferred) or the repo root."""
+    for base in _DATA_DIRS:
+        candidate = base / name
+        if candidate.exists():
+            return candidate
+    return _DATA_DIRS[0] / name
 
 # Feature column order — MUST match circle/ml/predictor.py:predict_tier.
 FEATURE_ORDER = [
@@ -53,17 +64,14 @@ TARGET = "membership_tier"
 logger = logging.getLogger("train_tier_model")
 
 
-def build_feature_frame(data_dir: Path) -> pd.DataFrame:
+def build_feature_frame() -> pd.DataFrame:
     """Build the per-customer feature matrix from the anonymized CSVs.
-
-    Args:
-        data_dir: Directory holding customers.csv and transactions.csv.
 
     Returns:
         DataFrame with FEATURE_ORDER columns plus the TARGET column.
     """
-    customers = pd.read_csv(data_dir / "customers.csv")
-    transactions = pd.read_csv(data_dir / "transactions.csv")
+    customers = pd.read_csv(find_data_file("customers.csv"))
+    transactions = pd.read_csv(find_data_file("transactions.csv"))
 
     # Per-customer transaction aggregates.
     transactions["is_drink_purchase"] = (
@@ -112,13 +120,14 @@ def train() -> dict:
     Returns:
         The metrics dictionary that was written to disk.
     """
-    if not (DATA_DIR / "customers.csv").exists():
+    customers_path = find_data_file("customers.csv")
+    if not customers_path.exists():
         raise FileNotFoundError(
-            f"Missing {DATA_DIR / 'customers.csv'}. "
-            "Place the anonymized Phase 1 CSVs in data/ first."
+            "Missing customers.csv (looked in data/ and the repo root). "
+            "Place the anonymized Phase 1 CSVs there first."
         )
 
-    frame = build_feature_frame(DATA_DIR)
+    frame = build_feature_frame()
     X = frame[FEATURE_ORDER]
     y = frame[TARGET]
     logger.info("Training on %d customers (%d features).", len(X), X.shape[1])
