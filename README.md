@@ -193,7 +193,16 @@ git push space claude/clever-sagan-T4ooK:main
 # username = your HF username, password = your HF write token
 ```
 
-The Space builds the Docker image and goes live at
+**Alternative to step 3 (no git needed)** — run the bundled helper, which
+creates the Space and uploads everything via the `huggingface_hub` library:
+
+```bash
+pip install huggingface_hub
+export HF_TOKEN=your-write-token          # from HF Settings -> Access Tokens
+python deploy_hf.py HF_USERNAME           # space name defaults to raw-smith-circle
+```
+
+Either way, the Space builds the Docker image and goes live at
 `https://HF_USERNAME-raw-smith-circle.hf.space`.
 
 **That's it** — no environment variables are required:
