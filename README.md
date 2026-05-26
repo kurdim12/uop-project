@@ -1,3 +1,17 @@
+---
+title: Raw Smith Circle
+emoji: ☕
+colorFrom: orange
+colorTo: gray
+sdk: docker
+app_port: 7860
+pinned: false
+short_description: Loyalty analytics & ML for Raw Smith Specialty Coffee
+---
+
+<!-- The block above is Hugging Face Space metadata (it configures the card and
+     the Docker SDK). It is ignored on GitHub except as a small table. -->
+
 # Raw Smith Circle — Phase 3
 
 A Django web application for the loyalty program of **Raw Smith Specialty
@@ -157,6 +171,39 @@ python manage.py migrate && python manage.py collectstatic --noinput
 - **Models won't load:** ensure `requirements.txt` installed cleanly — the
   committed `.joblib` models were built with the pinned `scikit-learn==1.5.2`
   and `numpy==2.1.3`.
+
+## 3c. Deploy to Hugging Face Spaces (free, Docker)
+
+Fully free, no credit card, and generous resources (16 GB RAM, ~50 GB disk) so
+the ML libraries are never a problem. The included `Dockerfile` + `start.sh`
+build the image, collect static, seed SQLite, and run Gunicorn on port 7860.
+The Space front-matter at the top of this README configures it automatically.
+
+**1. Create a free account** at <https://huggingface.co> and a **write
+access token** (Settings -> Access Tokens).
+
+**2. Create a new Space:** New -> Space -> **SDK: Docker -> Blank**, CPU basic
+(free). Name it e.g. `raw-smith-circle`.
+
+**3. Push this repo to the Space** (Spaces are git repos):
+
+```bash
+git remote add space https://huggingface.co/spaces/HF_USERNAME/raw-smith-circle
+git push space claude/clever-sagan-T4ooK:main
+# username = your HF username, password = your HF write token
+```
+
+The Space builds the Docker image and goes live at
+`https://HF_USERNAME-raw-smith-circle.hf.space`.
+
+**That's it** — no environment variables are required:
+- `ALLOWED_HOSTS` is preset to `.hf.space` (matches any Space subdomain).
+- `SECRET_KEY` is auto-generated at startup; *optionally* set a stable one under
+  the Space's **Settings -> Variables and secrets** (secret named `SECRET_KEY`)
+  if you want admin sessions to survive restarts.
+
+The free tier sleeps after inactivity and wakes on the next visit (fine for a
+demo). Storage is reset on rebuild, but `start.sh` re-seeds the data each boot.
 
 ## 4. Environment variables
 
