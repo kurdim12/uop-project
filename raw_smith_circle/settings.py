@@ -22,12 +22,16 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-# Render serves over HTTPS; trust the deployed host(s) for CSRF.
-CSRF_TRUSTED_ORIGINS = [
-    f"https://{h.strip()}"
-    for h in ALLOWED_HOSTS
-    if h.strip() not in ("localhost", "127.0.0.1")
-]
+# Render/HF serve over HTTPS; trust the deployed host(s) for CSRF. A
+# leading-dot wildcard host (e.g. ".hf.space") becomes "https://*.hf.space".
+CSRF_TRUSTED_ORIGINS = []
+for _host in ALLOWED_HOSTS:
+    _host = _host.strip()
+    if _host in ("localhost", "127.0.0.1", "*", ""):
+        continue
+    CSRF_TRUSTED_ORIGINS.append(
+        f"https://*{_host}" if _host.startswith(".") else f"https://{_host}"
+    )
 
 # --- Applications ----------------------------------------------------------
 INSTALLED_APPS = [
@@ -139,7 +143,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # --- Production hardening --------------------------------------------------
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = True
+    # Default on (Render). Hosts that terminate TLS themselves and don't pass a
+    # clean X-Forwarded-Proto (e.g. Hugging Face Spaces) can set this to False
+    # to avoid a redirect loop; the platform still serves only over HTTPS.
+    SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "True") == "True"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30  # 30 days
