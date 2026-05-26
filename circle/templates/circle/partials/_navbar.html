@@ -1,0 +1,23 @@
+{% load static %}
+<header class="sticky top-0 z-40 bg-cream/90 backdrop-blur border-b border-muted/20">
+  <nav class="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+    <a href="{% url 'circle:home' %}" class="flex items-center gap-2 shrink-0">
+      <img src="{% static 'circle/img/logo.svg' %}" alt="Raw Smith Circle" class="h-9 w-9">
+      <span class="font-display text-xl text-espresso tracking-tight">Raw Smith Circle</span>
+    </a>
+    <div class="flex items-center gap-1 sm:gap-2 text-sm font-medium">
+      {% with url_name=request.resolver_match.url_name %}
+      <a href="{% url 'circle:dashboard' %}"
+         class="px-3 py-2 rounded-md hover:bg-caramel/10 transition {% if url_name == 'dashboard' %}text-caramel{% else %}text-roast{% endif %}">Dashboard</a>
+      <a href="{% url 'circle:predict_tier' %}"
+         class="px-3 py-2 rounded-md hover:bg-caramel/10 transition {% if url_name == 'predict_tier' %}text-caramel{% else %}text-roast{% endif %}">Predict Tier</a>
+      <a href="{% url 'circle:predict_volume' %}"
+         class="px-3 py-2 rounded-md hover:bg-caramel/10 transition {% if url_name == 'predict_volume' %}text-caramel{% else %}text-roast{% endif %}">Predict Volume</a>
+      <a href="{% url 'circle:about' %}"
+         class="hidden sm:inline-block px-3 py-2 rounded-md hover:bg-caramel/10 transition {% if url_name == 'about' %}text-caramel{% else %}text-roast{% endif %}">About</a>
+      {% endwith %}
+      <a href="https://github.com/kurdim12/uop-project" target="_blank" rel="noopener"
+         class="ml-1 px-3 py-2 rounded-md text-white bg-espresso hover:bg-roast transition">GitHub</a>
+    </div>
+  </nav>
+</header>

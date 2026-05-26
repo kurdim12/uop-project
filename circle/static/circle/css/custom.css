@@ -1,0 +1,50 @@
+/* Small overrides layered on top of Tailwind (Play CDN). */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Consistent focus ring for keyboard users. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #C9784B;
+  outline-offset: 2px;
+}
+
+/* Tabular figures for numeric tables. */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Print stylesheet: clean dashboard screenshots / PDFs --------------- */
+@media print {
+  header,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  .print\:break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure card borders and chart colours render in print. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

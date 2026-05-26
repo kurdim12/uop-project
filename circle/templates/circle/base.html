@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Raw Smith Circle{% endblock %}</title>
+  <meta name="description" content="{% block description %}Raw Smith Circle - the loyalty analytics and machine-learning platform for Raw Smith Specialty Coffee, Amman.{% endblock %}">
+  <link rel="icon" href="{% static 'circle/img/favicon.svg' %}" type="image/svg+xml">
+
+  {# Open Graph / social sharing #}
+  <meta property="og:title" content="{% block og_title %}Raw Smith Circle{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Loyalty analytics & ML for Raw Smith Specialty Coffee.{% endblock %}">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'circle/img/logo.svg' %}">
+  <meta name="twitter:card" content="summary">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'espresso': '#1A1A1A',
+            'caramel': '#C9784B',
+            'cream': '#FAF7F2',
+            'roast': '#2D2826',
+            'muted': '#8B7E74',
+            'success': '#5A8A3A',
+            'warning': '#D4A845',
+          },
+          fontFamily: {
+            'sans': ['Inter', 'system-ui', 'sans-serif'],
+            'display': ['"Playfair Display"', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="{% static 'circle/css/custom.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-cream text-roast font-sans antialiased min-h-screen flex flex-col">
+  {% include 'circle/partials/_navbar.html' %}
+  <main class="flex-1 w-full">
+    {% block content %}{% endblock %}
+  </main>
+  {% include 'circle/partials/_footer.html' %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>
