@@ -33,9 +33,20 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 ML_DIR = Path(__file__).resolve().parent
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+# Look in data/ first, then the repo root (files are sometimes uploaded there).
+_DATA_DIRS = [REPO_ROOT / "data", REPO_ROOT]
 MODEL_PATH = ML_DIR / "volume_model.joblib"
 METRICS_PATH = ML_DIR / "volume_model_metrics.json"
+
+
+def find_data_file(name: str) -> Path:
+    """Locate a data file in data/ (preferred) or the repo root."""
+    for base in _DATA_DIRS:
+        candidate = base / name
+        if candidate.exists():
+            return candidate
+    return _DATA_DIRS[0] / name
 
 NUMERIC_FEATURES = [
     "temperature_max",
@@ -128,11 +139,11 @@ def attach_coffee_price(daily: pd.DataFrame, path: Path | None) -> pd.DataFrame:
     return daily
 
 
-def build_feature_frame(data_dir: Path) -> pd.DataFrame:
+def build_feature_frame() -> pd.DataFrame:
     """Build the per-day feature matrix (weather is the 261-row spine)."""
-    weather = load_weather(data_dir / "weather_amman.json")
+    weather = load_weather(find_data_file("weather_amman.json"))
 
-    transactions = pd.read_csv(data_dir / "transactions.csv")
+    transactions = pd.read_csv(find_data_file("transactions.csv"))
     transactions["created_date"] = pd.to_datetime(
         transactions["created_at"], errors="coerce", utc=True
     ).dt.date
@@ -149,21 +160,20 @@ def build_feature_frame(data_dir: Path) -> pd.DataFrame:
     df["day_of_week"] = pd.to_datetime(df["date"]).dt.dayofweek  # Monday=0
     df["month"] = pd.to_datetime(df["date"]).dt.month
 
-    coffee_path = data_dir / "coffee_prices_scraped.csv"
-    df = attach_coffee_price(df, coffee_path)
+    df = attach_coffee_price(df, find_data_file("coffee_prices_scraped.csv"))
 
     return df[FEATURE_ORDER + [TARGET]].copy()
 
 
 def train() -> dict:
     """Train, evaluate, and serialize the volume regressor."""
-    if not (DATA_DIR / "weather_amman.json").exists():
+    if not find_data_file("weather_amman.json").exists():
         raise FileNotFoundError(
-            f"Missing {DATA_DIR / 'weather_amman.json'}. "
-            "Place the Phase 2 enrichment files in data/ first."
+            "Missing weather_amman.json (looked in data/ and the repo root). "
+            "Place the Phase 2 enrichment files there first."
         )
 
-    frame = build_feature_frame(DATA_DIR)
+    frame = build_feature_frame()
     X = frame[FEATURE_ORDER]
     y = frame[TARGET]
     logger.info("Training on %d days (%d features).", len(X), X.shape[1])
