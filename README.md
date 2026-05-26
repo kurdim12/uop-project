@@ -68,6 +68,96 @@ serve predictions (the Render build does not retrain).
 
 `build.sh` is already executable and idempotent.
 
+## 3b. Deploy to PythonAnywhere (free tier, SQLite)
+
+A fully free alternative with no credit card and **persistent** storage (so the
+SQLite database survives restarts). No `gunicorn` / `render.yaml` are used here —
+PythonAnywhere runs the app through a WSGI config file, and WhiteNoise serves the
+static files.
+
+**1. Create a free "Beginner" account** at <https://www.pythonanywhere.com>.
+
+**2. Open a Bash console** (Consoles -> Bash) and set the project up:
+
+```bash
+git clone https://github.com/kurdim12/uop-project.git
+cd uop-project
+mkvirtualenv --python=/usr/bin/python3.10 rsc      # any Python 3.10+ is fine
+pip install --no-cache-dir -r requirements.txt
+```
+
+**3. Create the production `.env`** in the project root (`nano .env`):
+
+```
+SECRET_KEY=PASTE_A_LONG_RANDOM_STRING
+DEBUG=False
+ALLOWED_HOSTS=USERNAME.pythonanywhere.com
+```
+
+Generate a secret key with:
+`python -c "import secrets; print(secrets.token_urlsafe(50))"`
+
+**4. Initialize the database and static files:**
+
+```bash
+python manage.py collectstatic --noinput
+python manage.py migrate
+python manage.py load_data
+```
+
+**5. Web tab -> "Add a new web app" -> Manual configuration -> Python 3.10.**
+Then in the Web tab set:
+
+- **Virtualenv:** `/home/USERNAME/.virtualenvs/rsc`
+- **WSGI configuration file** (click the link): replace its entire contents with
+  the snippet below (change `USERNAME`):
+
+```python
+import os
+import sys
+
+project_home = "/home/USERNAME/uop-project"
+if project_home not in sys.path:
+    sys.path.insert(0, project_home)
+
+# Django reads SECRET_KEY / DEBUG / ALLOWED_HOSTS from the project's .env file.
+os.environ["DJANGO_SETTINGS_MODULE"] = "raw_smith_circle.settings"
+
+from django.core.wsgi import get_wsgi_application
+
+application = get_wsgi_application()
+```
+
+- **Static files** (optional, recommended on PA): URL `/static/` ->
+  Directory `/home/USERNAME/uop-project/staticfiles`. WhiteNoise also serves
+  static, so the site works even without this mapping.
+
+**6. Click "Reload"** and open `https://USERNAME.pythonanywhere.com`.
+
+**Updating later:**
+
+```bash
+workon rsc && cd ~/uop-project
+git pull
+pip install --no-cache-dir -r requirements.txt   # only if requirements changed
+python manage.py migrate && python manage.py collectstatic --noinput
+# then click Reload in the Web tab
+```
+
+**Troubleshooting:**
+
+- **Disk quota (free tier = 512 MB):** the ML stack (scikit-learn, pandas,
+  numpy, scipy) is large. `--no-cache-dir` helps. If `pip` runs out of space,
+  use the cheapest paid PA plan for more disk, or keep Render's free web service
+  and point `DATABASE_URL` at a free Neon/Supabase Postgres instead.
+- **400 Bad Request:** `ALLOWED_HOSTS` must equal exactly
+  `USERNAME.pythonanywhere.com`.
+- **Static files 404:** re-run `collectstatic` and Reload, or add the static
+  mapping above.
+- **Models won't load:** ensure `requirements.txt` installed cleanly — the
+  committed `.joblib` models were built with the pinned `scikit-learn==1.5.2`
+  and `numpy==2.1.3`.
+
 ## 4. Environment variables
 
 | Variable | Dev default | Production (Render) |
